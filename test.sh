@@ -4,20 +4,16 @@ set -e
 
 function set_state() {
     # set head of wip to pending
-    echo -n "Posting to https://api.github.com/repos/codecov/$1/statuses/$2..."
     curl -X POST "https://api.github.com/repos/codecov/$1/statuses/$2" \
          -H "Authorization: token $GITHUB_TOKEN" \
          -d "{\"state\": \"$3\",\
               \"target_url\": \"https://circleci.com/gh/codecov/testsuite/$CIRCLE_BUILD_NUM\",\
               \"description\": \"$4\",\
               \"context\": \"ci/testsuite\"}"
-    echo "ok"
 }
 
 function get_head() {
-    echo -n "Getting head for $1..."
     res=$(curl -sX GET "https://api.github.com/repos/codecov/$1/git/refs/heads/wip" | python -c "import sys,json;print(json.loads(sys.stdin.read())['object']['sha'])")
-    echo "$res"
 }
 
 # get head of wip branches
