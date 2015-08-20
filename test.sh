@@ -33,6 +33,7 @@ do
         then
             url=${urls[@]/"$url"}
         elif [ "$state" != "pending" ];
+        then
             exit 1;
         fi
     done
