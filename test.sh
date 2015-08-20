@@ -1,21 +1,21 @@
 #!/bin/bash
 
 set -e
-set -x
 
 function set_state() {
     # set head of wip to pending
-    echo "Posting to https://api.github.com/repos/codecov/$1/statuses/$2..."
+    echo -n "Posting to https://api.github.com/repos/codecov/$1/statuses/$2..."
     curl -X POST "https://api.github.com/repos/codecov/$1/statuses/$2" \
          -H "Authorization: token $GITHUB_TOKEN" \
          -d "{\"state\": \"$3\",\
               \"target_url\": \"https://circleci.com/gh/codecov/testsuite/$CIRCLE_BUILD_NUM\",\
               \"description\": \"$4\",\
               \"context\": \"ci/testsuite\"}"
-    echo -n "ok"
+    echo "ok"
 }
 
 function get_head() {
+    echo -n "Getting head for $1..."
     res=$(curl -sX GET "https://api.github.com/repos/codecov/$1/git/refs/heads/wip" | python -c "import sys,json;print(json.loads(sys.stdin.read())['object']['sha'])")
     echo "$res"
 }
@@ -48,16 +48,16 @@ do
 done
 
 # wait for travis to pick up builds
-echo "Waiting x30..."
+echo -n "Waiting x30..."
 sleep 30
-echo -n "ok"
+echo "ok"
 
 passed=0
 while [ "${#urls[@]}" != "0" ]
 do
-    echo "Waiting x10..."
+    echo -n "Waiting x10..."
     sleep 10
-    echo -n "ok"
+    echo "ok"
     # collect build numbers
     for url in ${urls[*]}
     do
