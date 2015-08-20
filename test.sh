@@ -12,8 +12,7 @@ function set_state() {
 }
 
 function get_head() {
-    return $(curl -sX GET "https://api.github.com/repos/codecov/$1/git/refs/wip" |\
-             python -c "import sys,json;print(json.loads(sys.stdin.read())['object']['sha'])")
+    return $(curl -sX GET "https://api.github.com/repos/codecov/$1/git/refs/wip" | python -c "import sys,json;print(json.loads(sys.stdin.read())['object']['sha'])")
 }
 
 # get head of wip branches
