@@ -39,7 +39,8 @@ do
     cd "$repo"
     git commit --allow-empty -m "circle #$CIRCLE_BUILD_NUM"
     # https://developer.github.com/v3/repos/statuses/#get-the-combined-status-for-a-specific-ref
-    urls+=("$repo/commits/$(git rev-parse HEAD)/status")
+    url="$repo/commits/$(git rev-parse HEAD)/status"
+    urls[url] = url
     git push origin future
     cd ../
 done
@@ -56,21 +57,22 @@ do
     sleep 60
     echo "ok"
     # collect build numbers
-    for url in ${urls[*]}
+    for i in ${!urls[@]}
     do
+        url=urls[$i]
         echo -n "Checking $url..."
         state=$(curl -sX GET "https://api.github.com/repos/codecov/$url" | python -c "import sys,json;print(json.loads(sys.stdin.read())['state'])")
         echo "$state"
         if [ "$state" = "success" ];
         then
             # no longer need to check
-            urls=${urls[@]/"$url"}
+            unset urls[$i]
             # record passed
             passed=$(expr $passed + 1)
         elif [ "$state" != "pending" ];
         then
             # no longer need to check
-            urls=${urls[@]/"$url"}
+            unset urls[$i]
         fi
     done
 done
