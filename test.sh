@@ -20,15 +20,17 @@ do
 done
 
 # wait for travis to pick up builds
-sleep 5
+sleep 30
 
 while [ "${#urls[@]}" != "0" ]
 do
-    sleep 5
+    sleep 10
     # collect build numbers
     for url in ${urls[*]}
     do
+        echo "Checking $url..."
         state=$(curl -s "$url" | python -c "import sys,json;print(json.loads(sys.stdin.read())['state'])")
+        echo -n "$state"
         if [ "$state" = "success" ];
         then
             url=${urls[@]/"$url"}
