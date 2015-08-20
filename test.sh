@@ -1,15 +1,18 @@
 #!/bin/bash
 
 set -e
+set -x
 
 function set_state() {
     # set head of wip to pending
+    echo "Posting to https://api.github.com/repos/codecov/$1/statuses/$2..."
     curl -X POST "https://api.github.com/repos/codecov/$1/statuses/$2" \
          -H "Authorization: token $GITHUB_TOKEN" \
          -d "{\"state\": \"$3\",\
               \"target_url\": \"https://circleci.com/gh/codecov/testsuite/$CIRCLE_BUILD_NUM\",\
               \"description\": \"$4\",\
               \"context\": \"ci/testsuite\"}"
+    echo -n "ok"
 }
 
 function get_head() {
@@ -25,12 +28,12 @@ codecovpython=$(get_head 'codecov-python')
 set_state "codecov-bash" "$codecovbash" "pending" "Pending..."
 set_state "codecov-python" "$codecovpython" "pending" "Pending..."
 
+# set git globals
 git config --global user.email "hello@codecov.io"
 git config --global user.name "Codecov Test Bot"
 
 repos=('example-java' 'example-scala' 'example-xcode')
 total="${#repos[@]}"
-passed=0
 
 urls=()
 for repo in ${repos[*]}
@@ -39,17 +42,22 @@ do
     cd "$repo"
     git commit --allow-empty -m "circle #$CIRCLE_BUILD_NUM"
     # https://developer.github.com/v3/repos/statuses/#get-the-combined-status-for-a-specific-ref
-    urls+=("https://api.github.com/repos/codecov/$repo/commits/$(git rev-parse --HEAD)/status")
+    urls+=("https://api.github.com/repos/codecov/$repo/commits/$(git rev-parse HEAD)/status")
     git push origin future
     cd ../
 done
 
 # wait for travis to pick up builds
+echo "Waiting x30..."
 sleep 30
+echo -n "ok"
 
+passed=0
 while [ "${#urls[@]}" != "0" ]
 do
+    echo "Waiting x10..."
     sleep 10
+    echo -n "ok"
     # collect build numbers
     for url in ${urls[*]}
     do
