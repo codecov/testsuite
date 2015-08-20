@@ -2,6 +2,9 @@
 
 set -e
 
+git config --global user.email "hello@codecov.io"
+git config --global user.name "Codecov Test Bot"
+
 for repo in 'example-java' 'example-scala' 'example-xcode'
 do
     git clone -b future git@github.com:codecov/$repo.git
