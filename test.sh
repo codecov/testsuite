@@ -4,15 +4,15 @@ set -e
 
 function set_state() {
     # set head of wip to pending
-    curl -X POST "https://api.github.com/repos/codecov/$0/statuses/$1" \
-         -d "{\"state\": \"$2\",\
+    curl -X POST "https://api.github.com/repos/codecov/$1/statuses/$2" \
+         -d "{\"state\": \"$3\",\
               \"target_url\": \"https://circleci.com/gh/codecov/testsuite/$CIRCLE_BUILD_NUM\",\
-              \"description\": \"$3\",\
+              \"description\": \"$4\",\
               \"context\": \"ci/testsuite\"}"
 }
 
 function get_head() {
-    return $(curl -sX GET "https://api.github.com/repos/codecov/$0/git/refs/wip" |\
+    return $(curl -sX GET "https://api.github.com/repos/codecov/$1/git/refs/wip" |\
              python -c "import sys,json;print(json.loads(sys.stdin.read())['object']['sha'])")
 }
 
