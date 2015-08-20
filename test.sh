@@ -4,12 +4,12 @@ set -e
 
 function set_state() {
     # set head of wip to pending
-    curl -X POST "https://api.github.com/repos/codecov/$1/statuses/$2" \
-         -H "Authorization: token $GITHUB_TOKEN" \
-         -d "{\"state\": \"$3\",\
-              \"target_url\": \"https://circleci.com/gh/codecov/testsuite/$CIRCLE_BUILD_NUM\",\
-              \"description\": \"$4\",\
-              \"context\": \"ci/testsuite\"}"
+    _=$(curl -sX POST "https://api.github.com/repos/codecov/$1/statuses/$2" \
+             -H "Authorization: token $GITHUB_TOKEN" \
+             -d "{\"state\": \"$3\",\
+                  \"target_url\": \"https://circleci.com/gh/codecov/testsuite/$CIRCLE_BUILD_NUM\",\
+                  \"description\": \"$4\",\
+                  \"context\": \"ci/testsuite\"}")
 }
 
 function get_head() {
@@ -39,38 +39,38 @@ do
     cd "$repo"
     git commit --allow-empty -m "circle #$CIRCLE_BUILD_NUM"
     # https://developer.github.com/v3/repos/statuses/#get-the-combined-status-for-a-specific-ref
-    urls+=("https://api.github.com/repos/codecov/$repo/commits/$(git rev-parse HEAD)/status")
+    urls+=("$repo/commits/$(git rev-parse HEAD)/status")
     git push origin future
     cd ../
 done
 
 # wait for travis to pick up builds
-echo -n "Waiting x30..."
-sleep 30
+echo -n "Waiting 2 minutes..."
+sleep 120
 echo "ok"
 
 passed=0
 while [ "${#urls[@]}" != "0" ]
 do
-    echo -n "Waiting x10..."
-    sleep 10
+    echo -n "Waiting 1 minute..."
+    sleep 60
     echo "ok"
     # collect build numbers
     for url in ${urls[*]}
     do
-        echo "Checking $url..."
-        state=$(curl -sX GET "$url" | python -c "import sys,json;print(json.loads(sys.stdin.read())['state'])")
-        echo -n "$state"
+        echo -n "Checking $url..."
+        state=$(curl -sX GET "https://api.github.com/repos/codecov/$url" | python -c "import sys,json;print(json.loads(sys.stdin.read())['state'])")
+        echo "$state"
         if [ "$state" = "success" ];
         then
             # no longer need to check
-            url=${urls[@]/"$url"}
+            urls=${urls[@]/"$url"}
             # record passed
             passed=$(expr $passed + 1)
         elif [ "$state" != "pending" ];
         then
             # no longer need to check
-            url=${urls[@]/"$url"}
+            urls=${urls[@]/"$url"}
         fi
     done
 done
@@ -78,16 +78,16 @@ done
 # submit states
 if [ "$passed" = "$total" ];
 then
-  state="success"
+  status="success"
 else
-  state="failure"
+  status="failure"
 fi
 
 # set state status for heads
-set_state "codecov-bash" "$codecovbash" "$state" "$passed/$total successful"
-set_state "codecov-python" "$codecovpython" "$state" "$passed/$total successful"
+set_state "codecov-bash" "$codecovbash" "$status" "$passed/$total successful"
+set_state "codecov-python" "$codecovpython" "$status" "$passed/$total successful"
 
-if [ "$state" != "success" ];
+if [ "$status" != "success" ];
 then
   exit 1;
 fi
