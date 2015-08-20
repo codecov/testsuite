@@ -5,6 +5,7 @@ set -e
 function set_state() {
     # set head of wip to pending
     curl -X POST "https://api.github.com/repos/codecov/$1/statuses/$2" \
+         -H 'Authorization: token $GITHUB_TOKEN'
          -d "{\"state\": \"$3\",\
               \"target_url\": \"https://circleci.com/gh/codecov/testsuite/$CIRCLE_BUILD_NUM\",\
               \"description\": \"$4\",\
