@@ -29,7 +29,7 @@ set_state "codecov-python" "$codecovpython" "pending" "Pending..."
 git config --global user.email "hello@codecov.io"
 git config --global user.name "Codecov Test Bot"
 
-repos=('example-java' 'example-scala' 'example-xcode')
+repos=('example-java' 'example-scala' 'example-xcode' 'example-c' 'example-lua' 'example-go' 'example-python' 'example-php')
 total="${#repos[@]}"
 
 urls=()
@@ -40,7 +40,7 @@ do
     git commit --allow-empty -m "circle #$CIRCLE_BUILD_NUM"
     # https://developer.github.com/v3/repos/statuses/#get-the-combined-status-for-a-specific-ref
     url="$repo/commits/$(git rev-parse HEAD)/status"
-    urls[$url]=url
+    urls["$url"]="$url"
     git push origin future
     cd ../
 done
@@ -57,22 +57,21 @@ do
     sleep 60
     echo "ok"
     # collect build numbers
-    for i in ${!urls[@]}
+    for url in ${!urls[@]}
     do
-        url=urls[$i]
         echo -n "Checking $url..."
         state=$(curl -sX GET "https://api.github.com/repos/codecov/$url" | python -c "import sys,json;print(json.loads(sys.stdin.read())['state'])")
         echo "$state"
         if [ "$state" = "success" ];
         then
             # no longer need to check
-            unset urls[$i]
+            unset urls["$url"]
             # record passed
             passed=$(expr $passed + 1)
         elif [ "$state" != "pending" ];
         then
             # no longer need to check
-            unset urls[$i]
+            unset urls["$url"]
         fi
     done
 done
