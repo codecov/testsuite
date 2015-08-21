@@ -55,7 +55,7 @@ try:
     total = len(repos)
 
     # Make empty commit
-    commits = []
+    commits = {}
     for repo in repos:
         # https://developer.github.com/v3/git/commits/#create-a-commit
         head = get_head(repo, 'future')
