@@ -42,9 +42,10 @@ set_state("codecov-bash", codecovbash, "pending")
 set_state("codecov-python", codecovpython, "pending")
 
 try:
-    repos = ['example-java' 'example-scala' 'example-xcode' 'example-c' 'example-lua' 'example-go' 'example-python' 'example-php']
+    repos = ['example-java', 'example-scala', 'example-xcode', 'example-c', 'example-lua', 'example-go', 'example-python', 'example-php']
     total = len(repos)
 
+    # Make empty commit
     commits = []
     for repo in repos:
         # https://developer.github.com/v3/git/commits/#create-a-commit
