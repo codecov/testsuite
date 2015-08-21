@@ -40,7 +40,7 @@ do
     git commit --allow-empty -m "circle #$CIRCLE_BUILD_NUM"
     # https://developer.github.com/v3/repos/statuses/#get-the-combined-status-for-a-specific-ref
     url="$repo/commits/$(git rev-parse HEAD)/status"
-    urls[url] = url
+    urls[$url]=url
     git push origin future
     cd ../
 done
