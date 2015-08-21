@@ -16,20 +16,20 @@ def set_state(repo, commit, state):
                                         target_url="https://circleci.com/gh/codecov/testsuite/"+os.getenv("CIRCLE_BUILD_NUM"),
                                         context="ci/testsuite")))
     print(res.text)
-    assert res.status_code == 200
+    res.raise_for_status()
 
 
 def get_head(repo, branch):
     res = requests.get("https://api.github.com/repos/codecov/%s/git/refs/heads/%s" % (repo, branch), headers=headers)
     print(res.text)
-    assert res.status_code == 200
+    res.raise_for_status()
     return res.json()['object']['sha']
 
 
 def get_tree(repo, commit):
     res = requests.get("https://api.github.com/repos/codecov/%s/git/trees/%s" % (repo, commit), headers=headers)
     print(res.text)
-    assert res.status_code == 200
+    res.raise_for_status()
     return res.json()['sha']
 
 
@@ -54,7 +54,7 @@ try:
                                             tree=get_tree(repo, 'future'),
                                             parents=[get_head(repo, 'future')],
                                             author=dict(name="Codecov Test Bot", email="hello@codecov.io"))))
-        assert res.status_code == 200
+        res.raise_for_status()
         commits[repo] = res.json()['sha']
 
     # wait for travis to pick up builds
@@ -71,7 +71,7 @@ try:
             print("Checking Travis %s at %s..." % (repo, commit))
             res = requests.get("https://api.github.com/repos/codecov/%s/commits/%s/status" % (repo, commit), headers=headers)
             print(res.text)
-            assert res.status_code == 200
+            res.raise_for_status()
             state = res.json()['state']
             print(state)
             assert state in ('success', 'pending')
