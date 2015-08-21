@@ -27,10 +27,18 @@ def get_head(repo, branch):
 
 
 def get_tree(repo, commit):
-    res = requests.get("https://api.github.com/repos/codecov/%s/git/trees/%s" % (repo, commit), headers=headers)
+    res = requests.get("https://api.github.com/repos/codecov/%s/git/commits/%s" % (repo, commit), headers=headers)
     print(res.text)
     res.raise_for_status()
-    return res.json()['sha']
+    return res.json()['tree']['sha']
+
+
+def update_reference(repo, ref, commit):
+    res = requests.get("https://api.github.com/repos/codecov/%s/git/refs/heads/%s" % (repo, ref), headers=headers,
+                       data=dumps(dict(sha=commit)))
+    print(res.text)
+    res.raise_for_status()
+    return True
 
 
 # get head of wip branches
@@ -57,7 +65,9 @@ try:
                                             parents=[head],
                                             author=dict(name="Codecov Test Bot", email="hello@codecov.io"))))
         res.raise_for_status()
-        commits[repo] = res.json()['sha']
+        sha = res.json()['sha']
+        update_reference(repo, 'future', sha)
+        commits[repo] = sha
 
     # wait for travis to pick up builds
     print("Waiting 4 minutes...")
