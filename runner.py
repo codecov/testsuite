@@ -20,6 +20,7 @@ def set_state(repo, commit, state):
 
 
 def get_head(repo, branch):
+    print("\033[92mGet head\033[0m")
     res = requests.get("https://api.github.com/repos/codecov/%s/git/refs/heads/%s" % (repo, branch), headers=headers)
     print(res.text)
     res.raise_for_status()
@@ -27,6 +28,7 @@ def get_head(repo, branch):
 
 
 def get_tree(repo, commit):
+    print("\033[92mGet tree\033[0m")
     res = requests.get("https://api.github.com/repos/codecov/%s/git/commits/%s" % (repo, commit), headers=headers)
     print(res.text)
     res.raise_for_status()
@@ -34,8 +36,9 @@ def get_tree(repo, commit):
 
 
 def update_reference(repo, ref, commit):
-    res = requests.get("https://api.github.com/repos/codecov/%s/git/refs/heads/%s" % (repo, ref), headers=headers,
-                       data=dumps(dict(sha=commit)))
+    print("\033[92mPatch reference\033[0m")
+    res = requests.patch("https://api.github.com/repos/codecov/%s/git/refs/heads/%s" % (repo, ref), headers=headers,
+                         data=dumps(dict(sha=commit)))
     print(res.text)
     res.raise_for_status()
     return True
@@ -59,11 +62,13 @@ try:
     for repo in repos:
         # https://developer.github.com/v3/git/commits/#create-a-commit
         head = get_head(repo, 'future')
+        print("\033[92mPost commit\033[0m")
         res = requests.post("https://api.github.com/repos/codecov/%s/git/commits" % repo, headers=headers,
                             data=dumps(dict(message="circle #"+os.getenv('CIRCLE_BUILD_NUM'),
                                             tree=get_tree(repo, head),
                                             parents=[head],
                                             author=dict(name="Codecov Test Bot", email="hello@codecov.io"))))
+        print(res.text)
         res.raise_for_status()
         sha = res.json()['sha']
         update_reference(repo, 'future', sha)
