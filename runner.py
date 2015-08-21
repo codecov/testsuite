@@ -42,17 +42,19 @@ set_state("codecov-bash", codecovbash, "pending")
 set_state("codecov-python", codecovpython, "pending")
 
 try:
-    repos = ['example-java', 'example-scala', 'example-xcode', 'example-c', 'example-lua', 'example-go', 'example-python', 'example-php']
+    repos = ['example-java', 'example-scala', 'example-xcode', 'example-c',
+             'example-lua', 'example-go', 'example-python', 'example-php']
     total = len(repos)
 
     # Make empty commit
     commits = []
     for repo in repos:
         # https://developer.github.com/v3/git/commits/#create-a-commit
+        head = get_head(repo, 'future')
         res = requests.post("https://api.github.com/repos/codecov/%s/git/commits" % repo, headers=headers,
-                            data=dumps(dict(message="circle #$CIRCLE_BUILD_NUM",
-                                            tree=get_tree(repo, 'future'),
-                                            parents=[get_head(repo, 'future')],
+                            data=dumps(dict(message="circle #"+os.getenv('CIRCLE_BUILD_NUM'),
+                                            tree=get_tree(repo, head),
+                                            parents=[head],
                                             author=dict(name="Codecov Test Bot", email="hello@codecov.io"))))
         res.raise_for_status()
         commits[repo] = res.json()['sha']
