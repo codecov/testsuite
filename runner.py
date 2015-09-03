@@ -31,31 +31,31 @@ def set_state(slug, commit, state):
                 headers=headers,
                 data=dumps(dict(state=state,
                                 target_url=circleurl,
-                                context="ci/testsuite")))
+                                context="codecov/examples")))
 
 
-def get_head(repo, branch):
+def get_head(slug, branch):
     print("\033[92mGet head\033[0m")
-    res = curl('get', "https://api.github.com/repos/codecov/%s/git/refs/heads/%s" % (repo, branch), headers=headers)
+    res = curl('get', "https://api.github.com/repos/%s/git/refs/heads/%s" % (slug, branch), headers=headers)
     return res.json()['object']['sha']
 
 
-def get_tree(repo, commit):
+def get_tree(slug, commit):
     print("\033[92mGet tree\033[0m")
-    res = curl('get', "https://api.github.com/repos/codecov/%s/git/commits/%s" % (repo, commit), headers=headers)
+    res = curl('get', "https://api.github.com/repos/%s/git/commits/%s" % (slug, commit), headers=headers)
     return res.json()['tree']['sha']
 
 
-def update_reference(repo, ref, commit):
+def update_reference(slug, ref, commit):
     print("\033[92mPatch reference\033[0m")
-    curl('patch', "https://api.github.com/repos/codecov/%s/git/refs/heads/%s" % (repo, ref), headers=headers,
+    curl('patch', "https://api.github.com/repos/%s/git/refs/heads/%s" % (slug, ref), headers=headers,
          data=dumps(dict(sha=commit)))
     return True
 
 
 try:
-    repos = ['example-java', 'example-scala', 'example-xcode', 'example-c',
-             'example-lua', 'example-go', 'example-python', 'example-php']
+    repos = ['codecov/example-java', 'codecov/example-scala', 'codecov/example-xcode', 'codecov/example-c',
+             'codecov/example-lua', 'codecov/example-go', 'codecov/example-python', 'codecov/example-php']
     total = len(repos)
 
     lang = os.getenv('TEST_LANG', 'bash')
@@ -74,20 +74,20 @@ try:
 
     # Make empty commit
     commits = {}
-    for repo in repos:
+    for _slug in repos:
         # https://developer.github.com/v3/git/commits/#create-a-commit
-        head = get_head(repo, 'future')
-        tree = get_tree(repo, head)
+        head = get_head(_slug, 'future')
+        tree = get_tree(_slug, head)
         print("\033[92mPost commit\033[0m")
-        res = curl('post', "https://api.github.com/repos/codecov/%s/git/commits" % repo,
+        res = curl('post', "https://api.github.com/repos/%s/git/commits" % _slug,
                    headers=headers,
                    data=dumps(dict(message="Circle build #%s\n%s\n%s" % (os.getenv('CIRCLE_BUILD_NUM'), circleurl, cmd),
                                    tree=tree,
                                    parents=[head],
                                    author=dict(name="Codecov Test Bot", email="hello@codecov.io"))))
-        sha = res.json()['sha']
-        update_reference(repo, 'future', sha)
-        commits[repo] = sha
+        _sha = res.json()['sha']
+        update_reference(_slug, 'future', _sha)
+        commits[_slug] = _sha
 
     # wait for travis to pick up builds
     print("Waiting 4 minutes...")
@@ -99,22 +99,22 @@ try:
         print("Waiting 1 minutes...")
         time.sleep(60)
         # collect build numbers
-        for repo, commit in commits.items():
-            print("Checking Travis %s at %s..." % (repo, commit))
-            res = curl('get', "https://api.github.com/repos/codecov/%s/commits/%s/status" % (repo, commit), headers=headers)
+        for _slug, commit in commits.items():
+            print("Checking Travis %s at %s..." % (_slug, commit))
+            res = curl('get', "https://api.github.com/repos/%s/commits/%s/status" % (_slug, commit), headers=headers)
             state = res.json()['state']
             print(state)
             assert state in ('success', 'pending')
             if state == 'success':
-                print("Checking Codecov %s at %s..." % (repo, commit))
-                future = curl('get', "https://codecov.io/api/gh/codecov/%s?ref=%s" % (repo, commit))
+                print("Checking %s at %s..." % (_slug, commit))
+                future = curl('get', "https://codecov.io/api/gh/%s?ref=%s" % (_slug, commit))
                 if future.status_code == 404:
-                    assert commit in future.json()['queue'], "%s at %.7s is not in Codecov upload queue" % (repo, commit)
+                    assert commit in future.json()['queue'], "%s at %.7s is not in Codecov upload queue" % (_slug, commit)
                     continue
 
-                master = curl('get', "https://codecov.io/api/gh/codecov/%s?branch=master" % repo)
+                master = curl('get', "https://codecov.io/api/gh/%s?branch=master" % _slug)
 
-                assert master.json()['report'] == future.json()['report'], "%s at %.7s reports do not match" % (repo, commit)
+                assert master.json()['report'] == future.json()['report'], "%s at %.7s reports do not match" % (_slug, commit)
 
                 commits.pop()
                 passed = passed + 1
