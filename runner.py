@@ -69,8 +69,9 @@ try:
     cmd = os.getenv('TEST_CMD', None)
     if not cmd:
         if lang == 'python':
-            cmd = 'pip install git+https://github.com/%s.git@%s && codecov' % (slug, sha)
+            cmd = 'pip install --user git+https://github.com/%s.git@%s && codecov' % (slug, sha)
         elif lang == 'bash':
+            repos.remove('example-c')  # python only
             cmd = 'bash <(curl -s https://raw.githubusercontent.com/%s/%s/codecov)' % (slug, sha)
 
     # Make empty commit
