@@ -14,9 +14,9 @@ def bash(cmd):
     return subprocess.check_output(cmd, shell=True).decode('utf-8')
 
 
-def set_state(repo, commit, state):
+def set_state(slug, commit, state):
     # set head of wip to pending
-    res = requests.post("https://api.github.com/repos/codecov/%s/statuses/%s" % (repo, commit),
+    res = requests.post("https://api.github.com/repos/%s/statuses/%s" % (slug, commit),
                         headers=headers,
                         data=dumps(dict(state=state,
                                         target_url=circleurl,
