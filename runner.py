@@ -22,7 +22,6 @@ def set_state(repo, commit, state):
                                         target_url=circleurl,
                                         context="ci/testsuite")))
     print(res.text)
-    res.raise_for_status()
 
 
 def get_head(repo, branch):
@@ -49,15 +48,6 @@ def update_reference(repo, ref, commit):
     res.raise_for_status()
     return True
 
-
-# get head of wip branches
-codecovbash = get_head('codecov-bash', 'wip')
-codecovpython = get_head('codecov-python', 'wip')
-
-# set pending status for heads
-set_state("codecov-bash", codecovbash, "pending")
-set_state("codecov-python", codecovpython, "pending")
-
 try:
     repos = ['example-java', 'example-scala', 'example-xcode', 'example-c',
              'example-lua', 'example-go', 'example-python', 'example-php']
@@ -73,6 +63,9 @@ try:
         elif lang == 'bash':
             repos.remove('example-c')  # python only
             cmd = 'bash <(curl -s https://raw.githubusercontent.com/%s/%s/codecov)' % (slug, sha)
+
+    # set pending status
+    set_state(slug, sha, "pending")
 
     # Make empty commit
     commits = {}
@@ -132,8 +125,7 @@ try:
     status = 'success' if len(commits) == 0 else 'failure'
 
     # set state status for heads
-    set_state("codecov-bash", codecovbash, status)
-    set_state("codecov-python", codecovpython, status)
+    set_state(slug, sha, status)
 
     sys.exit(status == 'failure')
 
