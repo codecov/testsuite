@@ -2,10 +2,16 @@ import os
 import sys
 import time
 import requests
+import subprocess
 from json import dumps
 
 
 headers = {"Authorization": "token "+os.getenv("GITHUB_TOKEN")}
+circleurl = "https://circleci.com/gh/codecov/testsuite/"+os.getenv("CIRCLE_BUILD_NUM")
+
+
+def bash(cmd):
+    return subprocess.check_output(cmd, shell=True).decode('utf-8')
 
 
 def set_state(repo, commit, state):
@@ -13,7 +19,7 @@ def set_state(repo, commit, state):
     res = requests.post("https://api.github.com/repos/codecov/%s/statuses/%s" % (repo, commit),
                         headers=headers,
                         data=dumps(dict(state=state,
-                                        target_url="https://circleci.com/gh/codecov/testsuite/"+os.getenv("CIRCLE_BUILD_NUM"),
+                                        target_url=circleurl,
                                         context="ci/testsuite")))
     print(res.text)
     res.raise_for_status()
@@ -57,15 +63,26 @@ try:
              'example-lua', 'example-go', 'example-python', 'example-php']
     total = len(repos)
 
+    lang = os.getenv('TEST_LANG', 'bash')
+    slug = os.getenv('TEST_SLUG', 'codecov/codecov-'+lang)
+    sha = os.getenv('TEST_SHA', 'master')
+    cmd = os.getenv('TEST_CMD', None)
+    if not cmd:
+        if lang == 'python':
+            cmd = 'pip install git+https://github.com/%s.git@%s && codecov' % (slug, sha)
+        elif lang == 'bash':
+            cmd = 'bash <(curl -s https://raw.githubusercontent.com/%s/%s/codecov)' % (slug, sha)
+
     # Make empty commit
     commits = {}
     for repo in repos:
         # https://developer.github.com/v3/git/commits/#create-a-commit
         head = get_head(repo, 'future')
+        tree = get_tree(repo, head)
         print("\033[92mPost commit\033[0m")
         res = requests.post("https://api.github.com/repos/codecov/%s/git/commits" % repo, headers=headers,
-                            data=dumps(dict(message="circle #"+os.getenv('CIRCLE_BUILD_NUM'),
-                                            tree=get_tree(repo, head),
+                            data=dumps(dict(message="Circle build #%s\n%s\n%s" % (os.getenv('CIRCLE_BUILD_NUM'), circleurl, cmd),
+                                            tree=tree,
                                             parents=[head],
                                             author=dict(name="Codecov Test Bot", email="hello@codecov.io"))))
         print(res.text)
