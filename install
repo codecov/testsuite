@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -e
+set -x
+
+# This script read the commit message
+# and installs the correct package to test against
+
+cmd=$(git log -1 --pretty=%B | tail -1)
+
+echo "Will do: $cmd"
+
+$cmd
