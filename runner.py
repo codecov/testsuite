@@ -55,7 +55,8 @@ def update_reference(slug, ref, commit):
 
 try:
     repos = ['codecov/example-java', 'codecov/example-scala', 'codecov/example-xcode', 'codecov/example-c',
-             'codecov/example-lua', 'codecov/example-go', 'codecov/example-python', 'codecov/example-php']
+             'codecov/example-lua', 'codecov/example-go', 'codecov/example-python', 'codecov/example-php',
+             'codecov/example-d']
     total = len(repos)
 
     lang = os.getenv('TEST_LANG', 'bash')
