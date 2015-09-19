@@ -56,7 +56,7 @@ def update_reference(slug, ref, commit):
 try:
     repos = ['codecov/example-java', 'codecov/example-scala', 'codecov/example-xcode', 'codecov/example-c',
              'codecov/example-lua', 'codecov/example-go', 'codecov/example-python', 'codecov/example-php',
-             'codecov/example-d']
+             'codecov/example-d', 'codecov/example-fortran']
     total = len(repos)
 
     lang = os.getenv('TEST_LANG', 'bash')
@@ -67,7 +67,7 @@ try:
         if lang == 'python':
             cmd = 'pip install --user git+https://github.com/%s.git@%s && codecov' % (slug, sha)
         elif lang == 'bash':
-            repos.remove('example-c')  # python only
+            repos.remove('codecov/example-c')  # python only
             cmd = 'bash <(curl -s https://raw.githubusercontent.com/%s/%s/codecov)' % (slug, sha)
 
     # set pending status
