@@ -108,9 +108,9 @@ try:
         # collect build numbers
         for _slug, commit in commits.items():
             print(_slug + " Checking Travis %s at %s..." % (_slug, commit))
-            res = curl('get', "https://api.github.com/repos/%s/commits/%s/status" % (_slug, commit), headers=headers)
-            state = res.json()['state']
-            print(state)
+            res = curl('get', "https://api.github.com/repos/%s/commits/%s/status" % (_slug, commit), headers=headers).json()
+            state = res['state']
+            print(_slug + ' State: ' + state + ' ' + res['statuses'][0]['target_url'])
             assert state in ('success', 'pending')
             if state == 'success':
                 print(_slug + " Checking %s at %s..." % (_slug, commit))
@@ -123,7 +123,7 @@ try:
 
                 assert master.json()['report'] == future.json()['report'], "%s at %.7s reports do not match" % (_slug, commit)
 
-                commits.remove((_slug, commit))
+                del commits[_slug]
                 passed = passed + 1
 
     # submit states
