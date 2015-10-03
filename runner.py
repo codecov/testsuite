@@ -14,8 +14,9 @@ headers = {"Authorization": "token "+os.getenv("GITHUB_TOKEN")}
 circleurl = "https://circleci.com/gh/codecov/testsuite/"+os.getenv("CIRCLE_BUILD_NUM")
 
 
-def curl(method, reraise=True, *args, **kwargs):
+def curl(method, *args, **kwargs):
     "wrapper to only print on errors"
+    reraise = kwargs.pop('reraise', None)
     res = getattr(requests, method)(*args, **kwargs)
     try:
         res.raise_for_status()
@@ -30,13 +31,13 @@ def bash(cmd):
     return subprocess.check_output(cmd, shell=True).decode('utf-8')
 
 
-def set_state(slug, commit, state, context, description=None):
+def set_state(slug, commit, state, context, description=None, url=None):
     # set head of wip to pending
     return curl('post', "https://api.github.com/repos/%s/statuses/%s" % (slug, commit),
                 headers=headers,
                 data=dumps(dict(state=state,
                                 description=description,
-                                target_url=circleurl,
+                                target_url=url or circleurl,
                                 context=context)))
 
 
@@ -65,7 +66,7 @@ try:
              'codecov/example-d', 'codecov/example-fortran', 'codecov/example-swift']
     total = len(repos)
 
-    lang = os.getenv('TEST_LANG', 'bash')
+    lang = os.getenv('TEST_LANG', 'python')
     slug = os.getenv('TEST_SLUG', 'codecov/codecov-'+lang)
     sha = os.getenv('TEST_SHA', 'master')
     cmd = os.getenv('TEST_CMD', None)
@@ -118,7 +119,8 @@ try:
                     continue
 
                 print(_slug)
-                print('    \033[92mCI Status:\033[0m ' + state + ' @ ' + res['statuses'][0]['target_url'])
+                travis_target_url = res['statuses'][0]['target_url']
+                print('    \033[92mCI Status:\033[0m ' + state + ' @ ' + travis_target_url)
 
                 # ASSERT status must be successful
                 assert state == 'success', "CI status %s" % state
@@ -141,7 +143,7 @@ try:
                 # reports must be 100% identical
                 if master == future:
                     print("    Report passed!")
-                    set_state(slug, sha, 'success', _slug)
+                    set_state(slug, sha, 'success', _slug, url=travis_target_url)
                     passed += 1
 
                 else:
@@ -152,12 +154,12 @@ try:
                     res = curl('post', 'https://api.github.com/gists', headers=headers,
                                data=dumps(dict(description=_slug, files={"diff.diff": {"content": "".join((diff.next(), diff.next(), diff.next(), "\n".join(diff)))}})))
                     print("    Report Failed.")
-                    set_state(slug, sha, 'failed', _slug, res.json()['html_url'])
+                    set_state(slug, sha, 'failed', _slug, res.json()['html_url'], url=travis_target_url)
 
                 del commits[_slug]
 
             except Exception as e:
-                set_state(slug, sha, 'error', _slug, str(e))
+                set_state(slug, sha, 'error', _slug, str(e), url=travis_target_url)
                 print('    '+str(e))
                 del commits[_slug]
 
