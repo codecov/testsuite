@@ -92,6 +92,7 @@ try:
                                    parents=[head],
                                    author=dict(name="Codecov Test Bot", email="hello@codecov.io"))))
         _sha = res.json()['sha']
+        print("    Sha: " + _sha)
         update_reference(_slug, 'future', _sha)
         commits[_slug] = _sha
 
@@ -122,7 +123,7 @@ try:
 
                 assert master.json()['report'] == future.json()['report'], "%s at %.7s reports do not match" % (_slug, commit)
 
-                commits.pop()
+                commits.remove((_slug, commit))
                 passed = passed + 1
 
     # submit states
