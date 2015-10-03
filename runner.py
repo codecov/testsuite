@@ -30,7 +30,7 @@ def bash(cmd):
     return subprocess.check_output(cmd, shell=True).decode('utf-8')
 
 
-def set_state(slug, commit, state, context):
+def set_state(slug, commit, state, context, description=None):
     # set head of wip to pending
     return curl('post', "https://api.github.com/repos/%s/statuses/%s" % (slug, commit),
                 headers=headers,
