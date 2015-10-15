@@ -9,7 +9,7 @@ from difflib import unified_diff
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
 logging.captureWarnings(True)
 
-headers = {"Authorization": "token "+os.getenv("GITHUB_TOKEN")}
+headers = {'Authorization': 'token '+os.getenv("GITHUB_TOKEN"), 'User-Agent': 'Codecov Debug Suite'}
 circleurl = "https://circleci.com/gh/codecov/testsuite/"+os.getenv("CIRCLE_BUILD_NUM")
 
 
@@ -148,7 +148,7 @@ try:
                                         dumps(future, indent=2, sort_keys=True).split('\n'),
                                         fromfile='master', tofile='future')
                     print("    \033[92mcreate gist\033[0m")
-                    # https://developer.github.com/v3/gists/#edit-a-gist
+                    # https://developer.github.com/v3/gists/#create-a-gist
                     res = curl('post', 'https://api.github.com/gists', headers=headers,
                                data=dumps(dict(description=_slug.replace('/', ' '),
                                                files={"diff.diff": {"content": "".join((diff.next(), diff.next(), diff.next(), "\n".join(diff)))}})))
