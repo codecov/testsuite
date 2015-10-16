@@ -59,7 +59,7 @@ def update_reference(slug, ref, commit):
 try:
     repos = ['codecov/example-java', 'codecov/example-scala', 'codecov/example-xcode', 'codecov/example-c',
              'codecov/example-lua', 'codecov/example-go', 'codecov/example-python', 'codecov/example-php',
-             'codecov/example-d', 'codecov/example-fortran', 'codecov/example-swift']
+             'codecov/example-node', 'codecov/example-d', 'codecov/example-fortran', 'codecov/example-swift']
 
     lang = os.getenv('TEST_LANG', 'python')
     slug = os.getenv('TEST_SLUG', 'codecov/codecov-'+lang)
@@ -73,6 +73,10 @@ try:
         elif lang == 'bash':
             repos.remove('codecov/example-c')  # python only
             cmd = 'bash <(curl -s https://raw.githubusercontent.com/%s/%s/codecov)' % (slug, sha)
+        elif lang == 'node':
+            repos.remove('codecov/example-xcode')
+            repos.remove('codecov/example-swift')
+            cmd = 'npm install @%s@%s && ./bin/codecov' % (slug, sha)
 
     # Make empty commit
     commits = {}
