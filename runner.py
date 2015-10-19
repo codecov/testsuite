@@ -157,7 +157,7 @@ try:
                                data=dumps(dict(description=_slug.replace('/', ' '),
                                                files={"diff.diff": {"content": "".join((diff.next(), diff.next(), diff.next(), "\n".join(diff)))}})))
                     print("    Report Failed.")
-                    set_state(slug, sha, 'failed', _slug, res.json()['html_url'], url=travis_target_url)
+                    set_state(slug, sha, 'failure', _slug, res.json()['html_url'], url=travis_target_url)
 
                 del commits[_slug]
 
