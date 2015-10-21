@@ -57,30 +57,33 @@ def update_reference(slug, ref, commit):
     return True
 
 
+repos = ['codecov/example-java', 'codecov/example-scala', 'codecov/example-xcode', 'codecov/example-c',
+         'codecov/example-lua', 'codecov/example-go', 'codecov/example-python', 'codecov/example-php',
+         'stevepeak/pykafka',  # contains python and C
+         'codecov/example-node', 'codecov/example-d', 'codecov/example-fortran', 'codecov/example-swift']
+
+lang = os.getenv('TEST_LANG')
+if lang is None:
+    sys.exit(0)
+
+slug = os.getenv('TEST_SLUG')
+sha = os.getenv('TEST_SHA')
+cmd = os.getenv('TEST_CMD', None)
+codecov_url = os.getenv('TEST_URL', 'https://codecov.io')
+if not cmd:
+    if lang == 'python':
+        repos.remove('codecov/example-swift')  # bash only atm because https://travis-ci.org/codecov/example-xcode/builds/83448813
+        repos.remove('codecov/example-xcode')  # bash only atm because https://travis-ci.org/codecov/example-xcode/builds/83448813
+        cmd = 'pip install --user git+https://github.com/%s.git@%s && codecov -u %s' % (slug, sha, codecov_url)
+    elif lang == 'bash':
+        repos.remove('codecov/example-c')  # python only
+        cmd = 'bash <(curl -s https://raw.githubusercontent.com/%s/%s/codecov) -u %s' % (slug, sha, codecov_url)
+    elif lang == 'node':
+        repos.remove('codecov/example-xcode')
+        repos.remove('codecov/example-swift')
+        cmd = 'npm install -g %s#%s && codecov -u %s' % (slug, sha, codecov_url)
+
 try:
-    repos = ['codecov/example-java', 'codecov/example-scala', 'codecov/example-xcode', 'codecov/example-c',
-             'codecov/example-lua', 'codecov/example-go', 'codecov/example-python', 'codecov/example-php',
-             'stevepeak/pykafka',  # contains python and C
-             'codecov/example-node', 'codecov/example-d', 'codecov/example-fortran', 'codecov/example-swift']
-
-    lang = os.getenv('TEST_LANG', 'python')
-    url = os.getenv('TEST_URL', 'https://codecov.io')
-    slug = os.getenv('TEST_SLUG', 'codecov/codecov-'+lang)
-    sha = os.getenv('TEST_SHA', get_head('codecov/codecov-'+lang, 'master'))
-    cmd = os.getenv('TEST_CMD', None)
-    if not cmd:
-        if lang == 'python':
-            repos.remove('codecov/example-swift')  # bash only atm because https://travis-ci.org/codecov/example-xcode/builds/83448813
-            repos.remove('codecov/example-xcode')  # bash only atm because https://travis-ci.org/codecov/example-xcode/builds/83448813
-            cmd = 'pip install --user git+https://github.com/%s.git@%s && codecov -u %s' % (slug, sha, url)
-        elif lang == 'bash':
-            repos.remove('codecov/example-c')  # python only
-            cmd = 'bash <(curl -s https://raw.githubusercontent.com/%s/%s/codecov) -u %s' % (slug, sha, url)
-        elif lang == 'node':
-            repos.remove('codecov/example-xcode')
-            repos.remove('codecov/example-swift')
-            cmd = 'npm install -g %s#%s && codecov -u %s' % (slug, sha, url)
-
     # Make empty commit
     commits = {}
     for _slug in repos:
@@ -105,8 +108,8 @@ try:
         commits[_slug] = _sha
 
     # wait for travis to pick up builds
-    print("==================================================\nWaiting 4 minutes...\n==================================================")
-    time.sleep(240)
+    print("==================================================\nWaiting 3 minutes...\n==================================================")
+    time.sleep(60 * 3)
 
     # Wait for CI Status
     passed = 0
@@ -130,7 +133,7 @@ try:
                 assert state == 'success', "CI status %s" % state
 
                 # get future report
-                future = curl('get', "https://codecov.io/api/gh/%s?ref=%s" % (_slug, commit), reraise=False)
+                future = curl('get', codecov_url+'/api/gh/%s?ref=%s' % (_slug, commit), reraise=False)
                 if future.status_code == 404:
                     # ASSERT is queued for processing
                     assert commit in future.json()['queue'], "%s at %.7s is not in Codecov upload queue" % (_slug, commit)
@@ -140,10 +143,15 @@ try:
 
                 assert future.status_code == 200, "Codecov returned %d" % future.status_code
 
-                future = future.json()['report']
+                future = future.json()
+                if future['waiting']:
+                    print("   In processing queue...")
+                    continue
+
+                future = future['report']
 
                 # get master report to compare against
-                master = curl('get', "https://codecov.io/api/gh/%s?branch=master" % _slug).json()['report']
+                master = curl('get', codecov_url+'/api/gh/%s?branch=master' % _slug).json()['report']
                 # reports must be 100% identical
                 if master == future:
                     print("    Report passed!")
@@ -159,14 +167,14 @@ try:
                     res = curl('post', 'https://api.github.com/gists', headers=headers,
                                data=dumps(dict(description=_slug.replace('/', ' '),
                                                files={"diff.diff": {"content": "".join((diff.next(), diff.next(), diff.next(), "\n".join(diff)))}})))
-                    print("    Report Failed.")
-                    set_state(slug, sha, 'failure', _slug, url=res.json()['html_url'])
+                    gist_url = res.json()['html_url']
+                    print("    Report Failed. " + gist_url)
+                    set_state(slug, sha, 'failure', _slug, url=gist_url)
 
                 del commits[_slug]
 
             except Exception as e:
                 set_state(slug, sha, 'error', _slug, str(e), url=travis_target_url)
-                print('    '+str(e))
                 traceback.print_exception(*sys.exc_info())
                 del commits[_slug]
 
