@@ -167,7 +167,7 @@ try:
             except Exception as e:
                 set_state(slug, sha, 'error', _slug, str(e), url=travis_target_url)
                 print('    '+str(e))
-                traceback.print_tb(sys.exc_info())
+                traceback.print_exception(*sys.exc_info())
                 del commits[_slug]
 
     sys.exit(passed < len(repos))
