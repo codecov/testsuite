@@ -3,6 +3,7 @@ import sys
 import time
 import logging
 import requests
+import traceback
 from json import dumps
 from difflib import unified_diff
 
@@ -28,7 +29,7 @@ def curl(method, *args, **kwargs):
 
 def set_state(slug, commit, state, context, description=None, url=None):
     # set head of wip to pending
-    print("    \033[92mpost status\033[0m")
+    print("    \033[92mpost status\033[0m " + state)
     return curl('post', "https://api.github.com/repos/%s/statuses/%s" % (slug, commit),
                 headers=headers,
                 data=dumps(dict(state=state,
@@ -59,9 +60,11 @@ def update_reference(slug, ref, commit):
 try:
     repos = ['codecov/example-java', 'codecov/example-scala', 'codecov/example-xcode', 'codecov/example-c',
              'codecov/example-lua', 'codecov/example-go', 'codecov/example-python', 'codecov/example-php',
+             'stevepeak/pykafka',  # contains python and C
              'codecov/example-node', 'codecov/example-d', 'codecov/example-fortran', 'codecov/example-swift']
 
     lang = os.getenv('TEST_LANG', 'python')
+    url = os.getenv('TEST_URL', 'https://codecov.io')
     slug = os.getenv('TEST_SLUG', 'codecov/codecov-'+lang)
     sha = os.getenv('TEST_SHA', get_head('codecov/codecov-'+lang, 'master'))
     cmd = os.getenv('TEST_CMD', None)
@@ -69,14 +72,14 @@ try:
         if lang == 'python':
             repos.remove('codecov/example-swift')  # bash only atm because https://travis-ci.org/codecov/example-xcode/builds/83448813
             repos.remove('codecov/example-xcode')  # bash only atm because https://travis-ci.org/codecov/example-xcode/builds/83448813
-            cmd = 'pip install --user git+https://github.com/%s.git@%s && codecov' % (slug, sha)
+            cmd = 'pip install --user git+https://github.com/%s.git@%s && codecov -u %s' % (slug, sha, url)
         elif lang == 'bash':
             repos.remove('codecov/example-c')  # python only
-            cmd = 'bash <(curl -s https://raw.githubusercontent.com/%s/%s/codecov)' % (slug, sha)
+            cmd = 'bash <(curl -s https://raw.githubusercontent.com/%s/%s/codecov) -u %s' % (slug, sha, url)
         elif lang == 'node':
             repos.remove('codecov/example-xcode')
             repos.remove('codecov/example-swift')
-            cmd = 'npm install @%s@%s && ./bin/codecov' % (slug, sha)
+            cmd = 'npm install @%s@%s && ./bin/codecov -u %s' % (slug, sha, url)
 
     # Make empty commit
     commits = {}
@@ -157,13 +160,14 @@ try:
                                data=dumps(dict(description=_slug.replace('/', ' '),
                                                files={"diff.diff": {"content": "".join((diff.next(), diff.next(), diff.next(), "\n".join(diff)))}})))
                     print("    Report Failed.")
-                    set_state(slug, sha, 'failure', _slug, res.json()['html_url'], url=travis_target_url)
+                    set_state(slug, sha, 'failure', _slug, url=res.json()['html_url'])
 
                 del commits[_slug]
 
             except Exception as e:
                 set_state(slug, sha, 'error', _slug, str(e), url=travis_target_url)
                 print('    '+str(e))
+                traceback.print_tb(sys.exc_info())
                 del commits[_slug]
 
     sys.exit(passed < len(repos))
