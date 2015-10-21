@@ -79,7 +79,7 @@ try:
         elif lang == 'node':
             repos.remove('codecov/example-xcode')
             repos.remove('codecov/example-swift')
-            cmd = 'npm install @%s@%s && ./bin/codecov -u %s' % (slug, sha, url)
+            cmd = 'npm install %s#%s && ./bin/codecov -u %s' % (slug, sha, url)
 
     # Make empty commit
     commits = {}
