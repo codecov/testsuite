@@ -122,6 +122,8 @@ try:
                 res = curl('get', "https://api.github.com/repos/%s/commits/%s/status" % (_slug, commit), headers=headers).json()
                 state = res['state']
                 print(_slug)
+                if len(res['statuses']) == 0:
+                    continue
                 travis_target_url = res['statuses'][0]['target_url']
                 print('    \033[92mCI Status:\033[0m ' + state + ' @ ' + travis_target_url)
 
