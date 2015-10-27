@@ -10,7 +10,7 @@ from difflib import unified_diff
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
 logging.captureWarnings(True)
 
-headers = {'Authorization': 'token '+os.getenv("GITHUB_TOKEN"), 'User-Agent': 'Codecov Debug Suite'}
+headers = {'Authorization': 'token '+os.getenv("GITHUB_TOKEN"), 'User-Agent': 'Codecov Debug'}
 circleurl = "https://circleci.com/gh/codecov/testsuite/"+os.getenv("CIRCLE_BUILD_NUM")
 
 
@@ -21,7 +21,7 @@ def curl(method, *args, **kwargs):
     try:
         res.raise_for_status()
     except:
-        print(res.text)
+        print(str(res.status_code) + ' -> ' + res.text)
         if reraise:
             raise
     return res
@@ -182,6 +182,6 @@ try:
 
     sys.exit(passed < len(repos))
 
-except Exception:
+except Exception as e:
     [set_state(slug, sha, 'error', _slug, str(e)) for _slug in commits.keys()]
     raise
