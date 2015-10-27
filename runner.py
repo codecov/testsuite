@@ -167,7 +167,7 @@ try:
                     print("    \033[92mcreate gist\033[0m")
                     # https://developer.github.com/v3/gists/#create-a-gist
                     res = curl('post', 'https://api.github.com/gists', headers=headers,
-                               data=dumps(dict(description=_slug.replace('/', ' '),
+                               data=dumps(dict(description='https://%s/gh/%s?ref=%s' % (codecov_url, _slug, commit),
                                                files={"diff.diff": {"content": "".join((diff.next(), diff.next(), diff.next(), "\n".join(diff)))}})))
                     gist_url = res.json()['html_url']
                     print("    Report Failed. " + gist_url)
