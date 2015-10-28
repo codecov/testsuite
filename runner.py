@@ -61,6 +61,7 @@ repos = ['codecov/example-java', 'codecov/example-scala', 'codecov/example-xcode
          'codecov/example-lua', 'codecov/example-go', 'codecov/example-python', 'codecov/example-php',
          'stevepeak/pykafka',  # contains python and C
          'codecov/example-node', 'codecov/example-d', 'codecov/example-fortran', 'codecov/example-swift']
+no_py_user = ['codecov/example-python', 'stevepeak/pykafka']
 
 lang = os.getenv('TEST_LANG')
 if lang is None:
@@ -90,7 +91,7 @@ try:
     # Make empty commit
     commits = {}
     for _slug in repos:
-        print(_slug)
+        print('\n'+_slug)
         # set pending status
         set_state(slug, sha, "pending", _slug)
 
@@ -98,7 +99,7 @@ try:
         head = get_head(_slug, 'future')
         tree = get_tree(_slug, head)
         print("    \033[92mpost commit\033[0m")
-        args = (os.getenv('CIRCLE_BUILD_NUM'), circleurl, cmd.replace(' --user', '') if 'python' in _slug else cmd)
+        args = (os.getenv('CIRCLE_BUILD_NUM'), circleurl, cmd.replace(' --user', '') if _slug in no_py_user else cmd)
         res = curl('post', "https://api.github.com/repos/%s/git/commits" % _slug,
                    headers=headers,
                    data=dumps(dict(message="Circle build #%s\n%s\n%s" % args,
@@ -170,7 +171,7 @@ try:
                     print("    \033[92mcreate gist\033[0m")
                     # https://developer.github.com/v3/gists/#create-a-gist
                     res = curl('post', 'https://api.github.com/gists', headers=headers,
-                               data=dumps(dict(description='https://%s/gh/%s?ref=%s' % (codecov_url, _slug, commit),
+                               data=dumps(dict(description='%s/gh/%s?ref=%s' % (codecov_url, _slug, commit),
                                                files={"diff.diff": {"content": "".join((diff.next(), diff.next(), diff.next(), "\n".join(diff)))}})))
                     gist_url = res.json()['html_url']
                     print("    Report Failed. " + gist_url)
