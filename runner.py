@@ -83,6 +83,9 @@ if not cmd:
         repos.remove('codecov/example-swift')
         cmd = 'npm install -g %s#%s && codecov -u %s' % (slug, sha, codecov_url)
 
+
+set_state(slug, sha, "pending", 'testsuite')
+
 try:
     # Make empty commit
     commits = {}
@@ -180,8 +183,10 @@ try:
                 traceback.print_exception(*sys.exc_info())
                 del commits[_slug]
 
+    set_state(slug, sha, 'success' if passed == len(repos) else 'failure', 'testsuite')
     sys.exit(passed < len(repos))
 
 except Exception as e:
     [set_state(slug, sha, 'error', _slug, str(e)) for _slug in commits.keys()]
+    set_state(slug, sha, 'error', 'testsuite')
     raise
