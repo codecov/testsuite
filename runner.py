@@ -59,9 +59,9 @@ def update_reference(slug, ref, commit):
 
 repos = ['codecov/example-java', 'codecov/example-scala', 'codecov/example-xcode', 'codecov/example-c',
          'codecov/example-lua', 'codecov/example-go', 'codecov/example-python', 'codecov/example-php',
-         'stevepeak/pykafka',  # contains python and C
+         # 'stevepeak/pykafka',  # contains python and C
          'codecov/example-node', 'codecov/example-d', 'codecov/example-fortran', 'codecov/example-swift']
-no_py_user = ['codecov/example-python', 'stevepeak/pykafka']
+no_py_user = ['codecov/example-python', ]
 
 lang = os.getenv('TEST_LANG')
 if lang is None:
@@ -142,7 +142,7 @@ try:
                 future = curl('get', codecov_url+'/api/gh/%s?ref=%s' % (_slug, commit), reraise=False)
                 if future.status_code == 404:
                     # ASSERT is queued for processing
-                    assert commit in future.json()['queue'], "%s at %.7s is not in Codecov upload queue" % (_slug, commit)
+                    assert any(filter(lambda q: commit in q, future.json()['queue'])), "%s at %.7s is not in Codecov upload queue" % (_slug, commit)
                     # it is...try again later
                     print("   In queue...")
                     continue
