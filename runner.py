@@ -14,6 +14,11 @@ headers = {'Authorization': 'token '+os.getenv("GITHUB_TOKEN"), 'User-Agent': 'C
 circleurl = "https://circleci.com/gh/codecov/testsuite/"+os.getenv("CIRCLE_BUILD_NUM")
 
 
+def save(path, data):
+    with open(os.path.join(os.getenv('CIRCLE_ARTIFACTS'), *path), 'w+') as f:
+        f.write(data)
+
+
 def curl(method, *args, **kwargs):
     "wrapper to only print on errors"
     reraise = kwargs.pop('reraise', None)
@@ -29,7 +34,6 @@ def curl(method, *args, **kwargs):
 
 def set_state(slug, commit, state, context, description=None, url=None):
     # set head of wip to pending
-    print("    \033[92mpost status\033[0m " + state)
     return curl('post', "https://api.github.com/repos/%s/statuses/%s" % (slug, commit),
                 headers=headers,
                 data=dumps(dict(state=state,
@@ -39,19 +43,16 @@ def set_state(slug, commit, state, context, description=None, url=None):
 
 
 def get_head(slug, branch):
-    print("    \033[92mget head\033[0m")
     res = curl('get', "https://api.github.com/repos/%s/git/refs/heads/%s" % (slug, branch), headers=headers)
     return res.json()['object']['sha']
 
 
 def get_tree(slug, commit):
-    print("    \033[92mget tree\033[0m")
     res = curl('get', "https://api.github.com/repos/%s/git/commits/%s" % (slug, commit), headers=headers)
     return res.json()['tree']['sha']
 
 
 def update_reference(slug, ref, commit):
-    print("    \033[92mpatch reference\033[0m")
     curl('patch', "https://api.github.com/repos/%s/git/refs/heads/%s" % (slug, ref), headers=headers,
          data=dumps(dict(sha=commit)))
     return True
@@ -107,7 +108,7 @@ try:
                                    parents=[head],
                                    author=dict(name="Codecov Test Bot", email="hello@codecov.io"))))
         _sha = res.json()['sha']
-        print("    new commit: " + _sha)
+        print("    \033[92mnew commit\033[0m " + _sha)
         update_reference(_slug, 'future', _sha)
         commits[_slug] = _sha
 
@@ -154,10 +155,14 @@ try:
                     print("   In processing queue...")
                     continue
 
-                future = future['report']
+                future = dumps(future['report'], indent=2, sort_keys=True)
+                save((_slug, 'future.json'), future)
 
                 # get master report to compare against
-                master = curl('get', codecov_url+'/api/gh/%s?branch=master' % _slug).json()['report']
+                master = curl('get', codecov_url+'/api/gh/%s?branch=master' % _slug)
+                master = dumps(master.json()['report'], indent=2, sort_keys=True)
+                save((_slug, 'master.json'), master)
+
                 # reports must be 100% identical
                 if master == future:
                     print("    Report passed!")
@@ -165,23 +170,23 @@ try:
                     passed += 1
 
                 else:
-                    diff = unified_diff(dumps(master, indent=2, sort_keys=True).split('\n'),
-                                        dumps(future, indent=2, sort_keys=True).split('\n'),
+                    diff = unified_diff(master.split('\n'), future.split('\n'),
                                         fromfile='master', tofile='future')
+
+                    save((_slug, 'report.diff'), str(diff))
+
                     print("    \033[92mcreate gist\033[0m")
-                    # https://developer.github.com/v3/gists/#create-a-gist
-                    res = curl('post', 'https://api.github.com/gists', headers=headers,
-                               data=dumps(dict(description='%s/gh/%s?ref=%s' % (codecov_url, _slug, commit),
-                                               files={"diff.diff": {"content": "".join((diff.next(), diff.next(), diff.next(), "\n".join(diff)))}})))
-                    gist_url = res.json()['html_url']
-                    print("    Report Failed. " + gist_url)
-                    set_state(slug, sha, 'failure', _slug, url=gist_url)
+                    print("    Report Failed. ")
+                    set_state(slug, sha, 'failure', _slug, 'https://circleci.com/gh/codecov/testsuite/%s#artifacts' % os.getenv('CIRCLE_BUILD_NUM'))
 
                 del commits[_slug]
 
             except Exception as e:
                 set_state(slug, sha, 'error', _slug, str(e), url=travis_target_url)
-                traceback.print_exception(*sys.exc_info())
+                if type(e) is AssertionError:
+                    print("    \033[91mFailure\033[0m", str(e))
+                else:
+                    traceback.print_exception(*sys.exc_info())
                 del commits[_slug]
 
     set_state(slug, sha, 'success' if passed == len(repos) else 'failure', 'testsuite')
