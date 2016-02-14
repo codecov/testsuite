@@ -15,7 +15,9 @@ circleurl = "https://circleci.com/gh/codecov/testsuite/"+os.getenv("CIRCLE_BUILD
 
 
 def save(path, data):
-    with open(os.path.join(os.getenv('CIRCLE_ARTIFACTS'), *path), 'w+') as f:
+    path = os.path.join(os.getenv('CIRCLE_ARTIFACTS'), *path)
+    os.makedirs(path)
+    with open(path, 'w+') as f:
         f.write(data)
 
 
