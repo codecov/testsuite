@@ -10,8 +10,8 @@ from difflib import unified_diff
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
 logging.captureWarnings(True)
 
-headers = {'Authorization': 'token '+os.getenv("GITHUB_TOKEN"), 'User-Agent': 'Codecov Debug'}
-circleurl = "https://circleci.com/gh/codecov/testsuite/"+os.getenv("CIRCLE_BUILD_NUM")
+headers = {'Authorization': 'token '+os.getenv('GITHUB_TOKEN'), 'User-Agent': 'Codecov Debug'}
+circleurl = 'https://circleci.com/gh/codecov/testsuite/'+os.getenv('CIRCLE_BUILD_NUM')
 
 
 def save(path, filename, data):
@@ -176,11 +176,11 @@ try:
                     diff = unified_diff(master.split('\n'), future.split('\n'),
                                         fromfile='master', tofile='future')
 
-                    save(_slug, 'report.diff', str(diff))
+                    save(_slug, 'report.diff', '\n'.join(list(diff)))
 
                     print "    \033[92mcreate gist\033[0m"
                     print "    Report Failed. "
-                    set_state(slug, sha, 'failure', _slug, 'https://circleci.com/gh/codecov/testsuite/%s#artifacts' % os.getenv('CIRCLE_BUILD_NUM'))
+                    set_state(slug, sha, 'failure', _slug, circleurl+'#artifacts')
 
                 del commits[_slug]
 
