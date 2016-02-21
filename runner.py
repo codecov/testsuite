@@ -63,8 +63,7 @@ def update_reference(slug, ref, commit):
 
 repos = ['codecov/example-java', 'codecov/example-scala', 'codecov/example-objc', 'codecov/example-c',
          'codecov/example-lua', 'codecov/example-go', 'codecov/example-python', 'codecov/example-php',
-         # 'stevepeak/pykafka',  # contains python and C
-         'codecov/example-node', 'codecov/example-d', 'codecov/example-fortran', 'codecov/example-swift']
+         'codecov/example-d', 'codecov/example-fortran', 'codecov/example-swift']
 no_py_user = ['codecov/example-python', ]
 
 lang = os.getenv('TEST_LANG')
