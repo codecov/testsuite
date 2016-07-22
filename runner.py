@@ -72,6 +72,10 @@ if lang is None:
 
 slug = os.getenv('TEST_SLUG')
 sha = os.getenv('TEST_SHA')
+if len(sha) != 40:
+    # get head of branch
+    sha = get_head(slug, sha)
+
 cmd = os.getenv('TEST_CMD', None)
 codecov_url = os.getenv('TEST_URL', 'https://codecov.io')
 if not cmd:
