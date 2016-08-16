@@ -11,7 +11,7 @@ from difflib import unified_diff
 logging.captureWarnings(True)
 
 headers = {'Authorization': 'token '+os.getenv('GITHUB_TOKEN'), 'User-Agent': 'Codecov Debug'}
-circleurl = 'https://circleci.com/gh/codecov/testsuite/'+os.getenv('CIRCLE_BUILD_NUM')
+circleurl = 'https://circleci.com/gh/codecov/testsuite/%s' % os.getenv('CIRCLE_BUILD_NUM')
 
 
 def save(path, filename, data):
@@ -107,7 +107,7 @@ try:
         tree = get_tree(_slug, head)
         print "    \033[92mpost commit\033[0m"
         args = (os.getenv('CIRCLE_BUILD_NUM'), circleurl, cmd.replace(' --user', '') if _slug in no_py_user else cmd)
-        res = curl('post', "https://api.github.com/repos/%s/git/commits" % _slug,
+        res = curl('post', 'https://api.github.com/repos/%s/git/commits' % _slug,
                    headers=headers,
                    data=dumps(dict(message="Circle build #%s\n%s\n%s" % args,
                                    tree=tree,
@@ -130,7 +130,8 @@ try:
         # collect build numbers
         for _slug, commit in commits.items():
             try:
-                res = curl('get', "https://api.github.com/repos/%s/commits/%s/status" % (_slug, commit), headers=headers).json()
+                res = curl('get', 'https://api.github.com/repos/%s/commits/%s/status' % (_slug, commit),
+                           headers=headers).json()
                 state = res['state']
                 print _slug
                 if len(res['statuses']) == 0:
@@ -146,7 +147,8 @@ try:
                 assert state == 'success', "CI status %s" % state
 
                 # get future report
-                future = curl('get', codecov_url+'/api/gh/%s/commit/%s' % (_slug, commit), reraise=False)
+                future = curl('get', '%s/api/gh/%s/commit/%s?src=extension' % (codecov_url, _slug, commit),
+                              reraise=False)
                 
                 # assert commit found
                 assert future.status_code == 200, "Codecov returned %d" % future.status_code
@@ -157,11 +159,11 @@ try:
                     print "   State: pending"
                     continue
 
-                future = dumps(future['report'], indent=2, sort_keys=True)
+                future = dumps(future['commit']['report'], indent=2, sort_keys=True)
                 save(_slug, 'future.json', future)
 
                 # get master report to compare against
-                master = curl('get', codecov_url+'/api/gh/%s?branch=master' % _slug)
+                master = curl('get', '%s/api/gh/%s/branch/master?src=extension' % (codecov_url, _slug))
                 master = dumps(master.json()['report'], indent=2, sort_keys=True)
                 save(_slug, 'master.json', master)
 
