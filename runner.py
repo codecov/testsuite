@@ -146,19 +146,15 @@ try:
                 assert state == 'success', "CI status %s" % state
 
                 # get future report
-                future = curl('get', codecov_url+'/api/gh/%s?ref=%s' % (_slug, commit), reraise=False)
-                if future.status_code == 404:
-                    # ASSERT is queued for processing
-                    assert any(filter(lambda q: commit in q, future.json()['queue'])), "%s at %.7s is not in Codecov upload queue" % (_slug, commit)
-                    # it is...try again later
-                    print "   In queue..."
-                    continue
-
+                future = curl('get', codecov_url+'/api/gh/%s/commit/%s' % (_slug, commit), reraise=False)
+                
+                # assert commit found
                 assert future.status_code == 200, "Codecov returned %d" % future.status_code
 
                 future = future.json()
-                if future['waiting']:
-                    print "   In processing queue..."
+                # retry if pending
+                if future['commit']['state'] == 'pending':
+                    print "   State: pending"
                     continue
 
                 future = dumps(future['report'], indent=2, sort_keys=True)
