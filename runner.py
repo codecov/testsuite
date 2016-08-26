@@ -178,7 +178,7 @@ try:
                     diff = unified_diff(master.split('\n'), future.split('\n'),
                                         fromfile='master', tofile='future')
 
-                    save(_slug, 'report.diff', '\n'.join(list(diff)))
+                    save(_slug, 'report.diff', ''.join((diff.next(), diff.next(), diff.next(), '\n'.join(list(diff)))))
 
                     print "    \033[92mcreate gist\033[0m"
                     print "    Report Failed. "
