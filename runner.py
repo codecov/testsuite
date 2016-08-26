@@ -164,7 +164,7 @@ try:
 
                 # get master report to compare against
                 master = curl('get', '%s/api/gh/%s/branch/master?src=extension' % (codecov_url, _slug))
-                master = dumps(master.json()['report'], indent=2, sort_keys=True)
+                master = dumps(master.json()['commit']['report'], indent=2, sort_keys=True)
                 save(_slug, 'master.json', master)
 
                 # reports must be 100% identical
