@@ -37,6 +37,13 @@ def curl(method, *args, **kwargs):
 
 def set_state(slug, commit, state, context, description=None, url=None):
     # set head of wip to pending
+    if context == 'testsuite' and os.getenv('NIGHTLY'):
+        requests.post(os.getenv('SLACK_URL'),
+                      headers={'Content-Type': 'application/json'},
+                      data=dumps(dict(text=description + ' ' + url,
+                                      author='Nightly Testsuite',
+                                      author_link=url)))
+    
     return curl('post', "https://api.github.com/repos/%s/statuses/%s" % (slug, commit),
                 headers=headers,
                 data=dumps(dict(state=state,
