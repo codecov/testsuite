@@ -37,13 +37,13 @@ def curl(method, *args, **kwargs):
 
 def set_state(slug, commit, state, context, description=None, url=None):
     # set head of wip to pending
-    if context == 'testsuite' and os.getenv('NIGHTLY'):
+    if context == 'testsuite' and state != 'pending' and os.getenv('SLACK_URL'):
         requests.post(os.getenv('SLACK_URL'),
                       headers={'Content-Type': 'application/json'},
-                      data=dumps(dict(text=description + ' ' + url,
+                      data=dumps(dict(text=' '.join((state.capitalize(), description, url)),
                                       author='Nightly Testsuite',
                                       author_link=url)))
-    
+
     return curl('post', "https://api.github.com/repos/%s/statuses/%s" % (slug, commit),
                 headers=headers,
                 data=dumps(dict(state=state,
@@ -72,6 +72,7 @@ repos = ['codecov/example-java', 'codecov/example-scala', 'codecov/example-objc'
          'codecov/example-lua', 'codecov/example-go', 'codecov/example-python', 'codecov/example-php',
          'codecov/example-d', 'codecov/example-fortran', 'codecov/example-swift']
 no_py_user = ['codecov/example-python', ]
+total = len(repos)
 
 lang = os.getenv('TEST_LANG')
 if lang is None:
@@ -156,7 +157,7 @@ try:
                 # get future report
                 future = curl('get', '%s/api/gh/%s/commit/%s?src=extension' % (codecov_url, _slug, commit),
                               reraise=False)
-                
+
                 # assert commit found
                 assert future.status_code == 200, "Codecov returned %d" % future.status_code
 
@@ -201,10 +202,10 @@ try:
                     traceback.print_exception(*sys.exc_info())
                 del commits[_slug]
 
-    set_state(slug, sha, 'success' if passed == len(repos) else 'failure', 'testsuite')
+    set_state(slug, sha, 'success' if passed == len(repos) else 'failure', 'testsuite', '%s/%s passed' % (passed, total))
     sys.exit(passed < len(repos))
 
 except Exception as e:
     [set_state(slug, sha, 'error', _slug, str(e)) for _slug in commits.keys()]
-    set_state(slug, sha, 'error', 'testsuite')
+    set_state(slug, sha, 'error', 'testsuite', '%s/%s passed' % (passed, total))
     raise
