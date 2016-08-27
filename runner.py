@@ -35,15 +35,15 @@ def curl(method, *args, **kwargs):
     return res
 
 
-def set_state(slug, commit, state, context, description=None, url=None):
-    # set head of wip to pending
-    if context == 'testsuite' and state != 'pending' and os.getenv('SLACK_URL'):
-        requests.post(os.getenv('SLACK_URL'),
-                      headers={'Content-Type': 'application/json'},
-                      data=dumps(dict(text=' '.join((state.capitalize(), description, url)),
-                                      author='Nightly Testsuite',
-                                      author_link=url)))
+def post_slack(text):
+    requests.post(os.getenv('SLACK_URL'),
+                  headers={'Content-Type': 'application/json'},
+                  data=dumps(dict(text=text,
+                                  author='Nightly Testsuite',
+                                  author_link=url)))
+    
 
+def set_state(slug, commit, state, context, description=None, url=None):
     return curl('post', "https://api.github.com/repos/%s/statuses/%s" % (slug, commit),
                 headers=headers,
                 data=dumps(dict(state=state,
@@ -203,9 +203,11 @@ try:
                 del commits[_slug]
 
     set_state(slug, sha, 'success' if passed == len(repos) else 'failure', 'testsuite', '%s/%s passed' % (passed, total))
+    post_slacck('%s passed, %s failed' % (passed, total))
     sys.exit(passed < len(repos))
 
 except Exception as e:
     [set_state(slug, sha, 'error', _slug, str(e)) for _slug in commits.keys()]
     set_state(slug, sha, 'error', 'testsuite', '%s/%s passed' % (passed, total))
+    post_slacck('%s passed, %s failed' % (passed, total))
     raise
