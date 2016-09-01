@@ -90,10 +90,10 @@ if not cmd:
     if lang == 'python':
         repos.remove('codecov/example-swift')  # bash only atm because https://travis-ci.org/codecov/example-objc/builds/83448813
         repos.remove('codecov/example-objc')  # bash only atm because https://travis-ci.org/codecov/example-objc/builds/83448813
-        cmd = 'pip install --user git+https://github.com/%s.git@%s && codecov -u %s' % (slug, sha, codecov_url)
+        cmd = 'pip install --user git+https://github.com/%s.git@%s && codecov -v -u %s' % (slug, sha, codecov_url)
     elif lang == 'bash':
         repos.remove('codecov/example-c')  # python only
-        cmd = 'bash <(curl -s https://raw.githubusercontent.com/%s/%s/codecov) -u %s' % (slug, sha, codecov_url)
+        cmd = 'bash <(curl -s https://raw.githubusercontent.com/%s/%s/codecov) -v -u %s' % (slug, sha, codecov_url)
     elif lang == 'node':
         repos.remove('codecov/example-objc')
         repos.remove('codecov/example-swift')
@@ -185,10 +185,10 @@ try:
                 else:
                     diff = unified_diff(master.split('\n'), future.split('\n'),
                                         fromfile='master', tofile='future')
+                    diff = ''.join((diff.next(), diff.next(), diff.next(), '\n'.join(list(diff))))
+                    print diff
+                    save(_slug, 'report.diff', diff)
 
-                    save(_slug, 'report.diff', ''.join((diff.next(), diff.next(), diff.next(), '\n'.join(list(diff)))))
-
-                    print "    \033[92mcreate gist\033[0m"
                     print "    Report Failed. "
                     set_state(slug, sha, 'failure', _slug, circleurl+'#artifacts')
 
