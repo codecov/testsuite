@@ -203,11 +203,11 @@ try:
                 del commits[_slug]
 
     set_state(slug, sha, 'success' if passed == len(repos) else 'failure', 'testsuite', '%s/%s passed' % (passed, total))
-    post_slacck('%s passed, %s failed' % (passed, total))
+    post_slack('%s passed, %s failed' % (passed, total))
     sys.exit(passed < len(repos))
 
 except Exception as e:
     [set_state(slug, sha, 'error', _slug, str(e)) for _slug in commits.keys()]
     set_state(slug, sha, 'error', 'testsuite', '%s/%s passed' % (passed, total))
-    post_slacck('%s passed, %s failed' % (passed, total))
+    post_slack('%s passed, %s failed' % (passed, total))
     raise
