@@ -72,7 +72,6 @@ repos = ['codecov/example-java', 'codecov/example-scala', 'codecov/example-objc'
          'codecov/example-lua', 'codecov/example-go', 'codecov/example-python', 'codecov/example-php',
          'codecov/example-d', 'codecov/example-fortran', 'codecov/example-swift']
 no_py_user = ['codecov/example-python', ]
-total = len(repos)
 
 lang = os.getenv('TEST_LANG')
 if lang is None:
@@ -99,6 +98,7 @@ if not cmd:
         repos.remove('codecov/example-swift')
         cmd = 'npm install -g %s#%s && codecov -u %s' % (slug, sha, codecov_url)
 
+total = len(repos)
 
 set_state(slug, sha, "pending", 'testsuite')
 
