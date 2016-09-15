@@ -40,7 +40,7 @@ def post_slack(text):
                   headers={'Content-Type': 'application/json'},
                   data=dumps(dict(text=text,
                                   author='Nightly Testsuite',
-                                  author_link=url)))
+                                  author_link=circleurl)))
     
 
 def set_state(slug, commit, state, context, description=None, url=None):
