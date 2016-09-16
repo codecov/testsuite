@@ -38,7 +38,7 @@ def curl(method, *args, **kwargs):
 def post_slack(text):
     requests.post(os.getenv('SLACK_URL'),
                   headers={'Content-Type': 'application/json'},
-                  data=dumps(dict(text=text,
+                  data=dumps(dict(text=text + ' ' + circleurl,
                                   author='Nightly Testsuite',
                                   author_link=circleurl)))
     
