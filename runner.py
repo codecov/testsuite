@@ -36,11 +36,12 @@ def curl(method, *args, **kwargs):
 
 
 def post_slack(text):
-    requests.post(os.getenv('SLACK_URL'),
-                  headers={'Content-Type': 'application/json'},
-                  data=dumps(dict(text=text + ' ' + circleurl,
-                                  author='Nightly Testsuite',
-                                  author_link=circleurl)))
+    if os.getenv('SLACK_URL'):
+        requests.post(os.getenv('SLACK_URL'),
+                      headers={'Content-Type': 'application/json'},
+                      data=dumps(dict(text=text + ' ' + circleurl,
+                                      author='Nightly Testsuite',
+                                      author_link=circleurl)))
     
 
 def set_state(slug, commit, state, context, description=None, url=None):
@@ -209,5 +210,5 @@ try:
 except Exception as e:
     [set_state(slug, sha, 'error', _slug, str(e)) for _slug in commits.keys()]
     set_state(slug, sha, 'error', 'testsuite', '%s/%s passed' % (passed, total))
-    post_slack('%s passed, %s failed' % (passed, total))
+    post_slack('%s passed, %s failed' % (passed, total - passed))
     raise
