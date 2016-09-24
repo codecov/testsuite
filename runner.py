@@ -7,11 +7,22 @@ import traceback
 from json import dumps
 from difflib import unified_diff
 
+
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
 logging.captureWarnings(True)
 
 headers = {'Authorization': 'token '+os.getenv('GITHUB_TOKEN'), 'User-Agent': 'Codecov Debug'}
 circleurl = 'https://circleci.com/gh/codecov/testsuite/%s' % os.getenv('CIRCLE_BUILD_NUM')
+test_branch = os.getenv('TEST_BRANCH', 'future')
+repos = ['codecov/example-java', 'codecov/example-scala', 'codecov/example-objc', 'codecov/example-c',
+         'codecov/example-lua', 'codecov/example-go', 'codecov/example-python', 'codecov/example-php',
+         'codecov/example-d', 'codecov/example-fortran', 'codecov/example-swift']
+no_py_user = ['codecov/example-python', ]
+lang = os.getenv('TEST_LANG', 'bash)
+slug = os.getenv('TEST_SLUG', 'codecov/codecov-bash')
+sha = os.getenv('TEST_SHA', 'master')
+cmd = os.getenv('TEST_CMD', None)
+codecov_url = os.getenv('TEST_URL', 'https://codecov.io')
 
 
 def save(path, filename, data):
@@ -69,41 +80,29 @@ def update_reference(slug, ref, commit):
     return True
 
 
-repos = ['codecov/example-java', 'codecov/example-scala', 'codecov/example-objc', 'codecov/example-c',
-         'codecov/example-lua', 'codecov/example-go', 'codecov/example-python', 'codecov/example-php',
-         'codecov/example-d', 'codecov/example-fortran', 'codecov/example-swift']
-no_py_user = ['codecov/example-python', ]
-
-lang = os.getenv('TEST_LANG')
-if lang is None:
-    sys.exit(0)
-
-slug = os.getenv('TEST_SLUG')
-sha = os.getenv('TEST_SHA')
-if len(sha) != 40:
-    # get head of branch
-    sha = get_head(slug, sha)
-
-cmd = os.getenv('TEST_CMD', None)
-codecov_url = os.getenv('TEST_URL', 'https://codecov.io')
-if not cmd:
-    if lang == 'python':
-        repos.remove('codecov/example-swift')  # bash only atm because https://travis-ci.org/codecov/example-objc/builds/83448813
-        repos.remove('codecov/example-objc')  # bash only atm because https://travis-ci.org/codecov/example-objc/builds/83448813
-        cmd = 'pip install --user git+https://github.com/%s.git@%s && codecov -v -u %s' % (slug, sha, codecov_url)
-    elif lang == 'bash':
-        repos.remove('codecov/example-c')  # python only
-        cmd = 'bash <(curl -s https://raw.githubusercontent.com/%s/%s/codecov) -v -u %s' % (slug, sha, codecov_url)
-    elif lang == 'node':
-        repos.remove('codecov/example-objc')
-        repos.remove('codecov/example-swift')
-        cmd = 'npm install -g %s#%s && codecov -u %s' % (slug, sha, codecov_url)
-
-total = len(repos)
-
-set_state(slug, sha, "pending", 'testsuite')
-
 try:
+
+    if not cmd:
+        if lang == 'python':
+            repos.remove('codecov/example-swift')  # bash only atm because https://travis-ci.org/codecov/example-objc/builds/83448813
+            repos.remove('codecov/example-objc')  # bash only atm because https://travis-ci.org/codecov/example-objc/builds/83448813
+            cmd = 'pip install --user git+https://github.com/%s.git@%s && codecov -v -u %s' % (slug, sha, codecov_url)
+        elif lang == 'bash':
+            repos.remove('codecov/example-c')  # python only
+            cmd = 'bash <(curl -s https://raw.githubusercontent.com/%s/%s/codecov) -v -u %s' % (slug, sha, codecov_url)
+        elif lang == 'node':
+            repos.remove('codecov/example-objc')
+            repos.remove('codecov/example-swift')
+            cmd = 'npm install -g %s#%s && codecov -u %s' % (slug, sha, codecov_url)
+    
+    total = len(repos)
+
+    set_state(slug, sha, "pending", 'testsuite')
+
+    if len(sha) != 40:
+        # get head of branch
+        sha = get_head(slug, sha)
+
     # Make empty commit
     commits = {}
     for _slug in repos:
@@ -112,7 +111,7 @@ try:
         set_state(slug, sha, "pending", _slug)
 
         # https://developer.github.com/v3/git/commits/#create-a-commit
-        head = get_head(_slug, 'future')
+        head = get_head(_slug, test_branch)
         tree = get_tree(_slug, head)
         print "    \033[92mpost commit\033[0m"
         args = (os.getenv('CIRCLE_BUILD_NUM'), circleurl, cmd.replace(' --user', '') if _slug in no_py_user else cmd)
@@ -124,7 +123,7 @@ try:
                                    author=dict(name="Codecov Test Bot", email="hello@codecov.io"))))
         _sha = res.json()['sha']
         print "    \033[92mnew commit\033[0m " + _sha
-        update_reference(_slug, 'future', _sha)
+        update_reference(_slug, test_branch, _sha)
         commits[_slug] = _sha
 
     # wait for travis to pick up builds
