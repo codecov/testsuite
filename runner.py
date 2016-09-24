@@ -18,7 +18,7 @@ repos = ['codecov/example-java', 'codecov/example-scala', 'codecov/example-objc'
          'codecov/example-lua', 'codecov/example-go', 'codecov/example-python', 'codecov/example-php',
          'codecov/example-d', 'codecov/example-fortran', 'codecov/example-swift']
 no_py_user = ['codecov/example-python', ]
-lang = os.getenv('TEST_LANG', 'bash)
+lang = os.getenv('TEST_LANG', 'bash')
 slug = os.getenv('TEST_SLUG', 'codecov/codecov-bash')
 sha = os.getenv('TEST_SHA', 'master')
 cmd = os.getenv('TEST_CMD', None)
