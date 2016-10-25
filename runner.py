@@ -16,7 +16,7 @@ circleurl = 'https://circleci.com/gh/codecov/testsuite/%s' % os.getenv('CIRCLE_B
 test_branch = os.getenv('TEST_BRANCH', 'future')
 repos = ['codecov/example-java', 'codecov/example-scala', 'codecov/example-objc', 'codecov/example-c',
          'codecov/example-lua', 'codecov/example-go', 'codecov/example-python', 'codecov/example-php',
-         'codecov/example-d', 'codecov/example-fortran', 'codecov/example-swift']
+         'codecov/example-d', 'codecov/example-fortran', 'codecov/example-swift', 'codecov/example-clojure']
 no_py_user = ['codecov/example-python', ]
 lang = os.getenv('TEST_LANG', 'bash')
 slug = os.getenv('TEST_SLUG', 'codecov/codecov-bash')
