@@ -167,13 +167,17 @@ try:
                     print "   State: pending"
                     continue
 
-                future = dumps(future['commit']['report'], indent=2, sort_keys=True)
+                future = future['commit']['report']
+                future['totals'].pop('diff', None)
+                future = dumps(future, indent=2, sort_keys=True)
                 save(_slug, 'future.json', future)
 
                 # get master report to compare against
                 head_of_master = curl('get', '%s/api/gh/%s/branch/master' % (codecov_url, _slug)).json()['commit']['commitid']
                 master = curl('get', '%s/api/gh/%s/commit/%s?src=extension' % (codecov_url, _slug, head_of_master))
-                master = dumps(master.json()['commit']['report'], indent=2, sort_keys=True)
+                master = master.json()['commit']['report']
+                master['totals'].pop('diff', None)
+                master = dumps(master, indent=2, sort_keys=True)
                 save(_slug, 'master.json', master)
 
                 # reports must be 100% identical
