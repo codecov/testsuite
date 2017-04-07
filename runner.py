@@ -89,11 +89,11 @@ try:
             cmd = 'pip install --user git+https://github.com/%s.git@%s && codecov -v -u %s' % (slug, sha, codecov_url)
         elif lang == 'bash':
             repos.remove('codecov/example-c')  # python only
-            cmd = 'bash <(curl -s https://raw.githubusercontent.com/%s/%s/codecov) -v -u %s' % (slug, sha, codecov_url)
+            cmd = 'bash <(curl -s https://raw.githubusercontent.com/%s/%s/codecov) -v -u %s -Z' % (slug, sha, codecov_url)
         elif lang == 'node':
             repos.remove('codecov/example-objc')
             repos.remove('codecov/example-swift')
-            cmd = 'npm install -g %s#%s && codecov -u %s' % (slug, sha, codecov_url)
+            cmd = 'npm install -g %s#%s && codecov -u %s -Z' % (slug, sha, codecov_url)
     
     total = len(repos)
 
