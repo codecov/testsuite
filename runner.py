@@ -211,7 +211,10 @@ try:
     sys.exit(passed < len(repos))
 
 except Exception as e:
-    [set_state(slug, sha, 'error', _slug, str(e)) for _slug in commits.keys()]
-    set_state(slug, sha, 'error', 'testsuite', '%s/%s passed' % (passed, total))
-    post_slack('%s passed, %s failed' % (passed, total - passed))
+     try:
+        [set_state(slug, sha, 'error', _slug, str(e)) for _slug in commits.keys()]
+        set_state(slug, sha, 'error', 'testsuite', '%s/%s passed' % (passed, total))
+        post_slack('%s passed, %s failed' % (passed, total - passed))
+    except:
+        pass
     raise
